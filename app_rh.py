@@ -1,126 +1,115 @@
 import streamlit as st
-import sqlite3
 import pandas as pd
+from streamlit_gsheets import GSheetsConnection
 import time
+from datetime import datetime
 
-# --- CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(page_title="Sistema RH Web", layout="wide")
+# --- CONFIGURAÇÃO ---
+# MANTENHA O SEU LINK AQUI (Não apague o que já estava funcionando!)
+LINK_PLANILHA = "https://docs.google.com/spreadsheets/d/1JvYrEt0P3fcnCsINtN7zWcKRPoEjRtcCZqR-UAZOBxo/edit?gid=0#gid=0"
 
-# --- FUNÇÕES DE BANCO DE DADOS ---
+st.set_page_config(page_title="RH + Google Sheets", layout="wide")
+st.title("🌐 Controle de Funcionários")
 
+# --- CONEXÃO ---
+conn = st.connection("gsheets", type=GSheetsConnection)
 
-def get_connection():
-    return sqlite3.connect("funcionarios.db")
-
-
-def init_db():
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS funcionarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL,
-            cargo TEXT NOT NULL,
-            salario REAL NOT NULL
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-
-def add_funcionario(nome, cargo, salario):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("INSERT INTO funcionarios (nome, cargo, salario) VALUES (?, ?, ?)",
-              (nome, cargo, salario))
-    conn.commit()
-    conn.close()
+# --- FUNÇÕES ---
 
 
 def get_data():
-    conn = get_connection()
-    df = pd.read_sql("SELECT * FROM funcionarios", conn)
-    conn.close()
-    return df
+    return conn.read(spreadsheet=LINK_PLANILHA, worksheet="Dados", ttl=0)
+
+# 1. ATUALIZAMOS AQUI: A função agora recebe mais dados
 
 
-def delete_funcionario(id_func):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("DELETE FROM funcionarios WHERE id = ?", (id_func,))
-    conn.commit()
-    conn.close()
+def add_funcionario(nome, cargo, salario, email, data_admissao):
+    try:
+        df_atual = get_data()
+
+        # 2. ATUALIZAMOS AQUI: O pacote de dados agora tem os campos novos
+        novo_dado = pd.DataFrame([{
+            "nome": nome,
+            "cargo": cargo,
+            "salario": salario,
+            "email": email,
+            # Convertendo a data para texto para salvar na planilha
+            "data_admissao": data_admissao.strftime("%d/%m/%Y")
+        }])
+
+        df_atualizado = pd.concat([df_atual, novo_dado], ignore_index=True)
+        conn.update(spreadsheet=LINK_PLANILHA,
+                    worksheet="Dados", data=df_atualizado)
+        return True
+    except Exception as e:
+        st.error(f"Erro ao salvar: {e}")
+        return False
 
 
-# Inicializa o banco ao abrir
-init_db()
+def delete_funcionario(index_to_delete):
+    try:
+        df_atual = get_data()
+        df_atualizado = df_atual.drop(index_to_delete)
+        conn.update(spreadsheet=LINK_PLANILHA,
+                    worksheet="Dados", data=df_atualizado)
+        return True
+    except Exception as e:
+        st.error(f"Erro ao excluir: {e}")
+        return False
 
-# --- INTERFACE (FRONTEND) ---
-st.title("🌐 Controle de Funcionários - Web")
 
-# Layout: Menu Lateral para Ações
-st.sidebar.header("Gerenciamento")
-menu_option = st.sidebar.radio(
-    "Escolha uma ação:", ["Visualizar Equipe", "Cadastrar Novo", "Excluir"])
+# --- INTERFACE ---
+menu_option = st.sidebar.radio("Menu", ["Visualizar", "Cadastrar", "Excluir"])
 
-# --- ABA 1: VISUALIZAR ---
-if menu_option == "Visualizar Equipe":
-    st.subheader("Quadro de Funcionários")
-    df = get_data()
+if menu_option == "Visualizar":
+    st.subheader("Equipe Atual")
+    try:
+        df = get_data()
+        st.dataframe(df, use_container_width=True)
+    except Exception as e:
+        st.error(f"Erro de conexão: {e}")
 
-    if not df.empty:
-        # Formata o salário para visualização (R$)
-        df_show = df.copy()
-        df_show['salario'] = df_show['salario'].apply(lambda x: f"R$ {x:.2f}")
-
-        # Mostra tabela interativa
-        st.dataframe(df_show, use_container_width=True, hide_index=True)
-
-        # Métricas rápidas
-        col1, col2 = st.columns(2)
-        col1.metric("Total de Funcionários", len(df))
-        col2.metric("Média Salarial", f"R$ {df['salario'].mean():.2f}")
-    else:
-        st.info("Nenhum funcionário cadastrado ainda.")
-
-# --- ABA 2: CADASTRAR ---
-elif menu_option == "Cadastrar Novo":
+elif menu_option == "Cadastrar":
     st.subheader("Novo Cadastro")
+    with st.form("form_add"):
+        # Layout: Colunas para ficar mais bonito
+        col1, col2 = st.columns(2)
 
-    with st.form("form_cadastro", clear_on_submit=True):
-        nome = st.text_input("Nome Completo")
-        cargo = st.selectbox("Cargo", [
-                             "Desenvolvedor", "Analista de Dados", "Gerente", "RH", "Estagiário", "Outro"])
-        salario = st.number_input(
-            "Salário (R$)", min_value=0.0, step=100.0, format="%.2f")
+        with col1:
+            nome = st.text_input("Nome Completo")
+            email = st.text_input("E-mail Corporativo")  # NOVO CAMPO
 
-        submitted = st.form_submit_button("Salvar Funcionário")
+        with col2:
+            cargo = st.selectbox(
+                "Cargo", ["Dev", "Analista", "Gerente", "RH", "Suporte"])
+            salario = st.number_input(
+                "Salário (R$)", min_value=0.0, step=100.0)
+            data_admissao = st.date_input("Data de Admissão")  # NOVO CAMPO
 
-        if submitted:
-            if nome and cargo:
-                add_funcionario(nome, cargo, salario)
-                st.success(f"✅ {nome} cadastrado com sucesso!")
-                time.sleep(1)  # Pequena pausa para o usuário ler
-                st.rerun()  # Atualiza a página
+        if st.form_submit_button("Salvar Funcionário"):
+            # 3. ATUALIZAMOS AQUI: Enviamos os novos campos para a função
+            if nome:
+                if add_funcionario(nome, cargo, salario, email, data_admissao):
+                    st.success("✅ Funcionário salvo com sucesso!")
+                    time.sleep(1)
+                    st.rerun()
             else:
-                st.error("Por favor, preencha o nome.")
+                st.warning("O campo Nome é obrigatório.")
 
-# --- ABA 3: EXCLUIR ---
 elif menu_option == "Excluir":
-    st.subheader("Remover Funcionário")
-    df = get_data()
+    st.subheader("Excluir")
+    try:
+        df = get_data()
+        if not df.empty:
+            # Mostra ID e Nome para facilitar
+            opcoes = [f"{i} - {row['nome']}" for i, row in df.iterrows()]
+            escolha = st.selectbox("Selecione para remover:", opcoes)
 
-    if not df.empty:
-        # Cria uma lista de opções "ID - Nome"
-        lista_funcionarios = df.apply(
-            lambda x: f"{x['id']} - {x['nome']}", axis=1)
-        escolha = st.selectbox("Selecione para excluir:", lista_funcionarios)
-
-        if st.button("Confirmar Exclusão", type="primary"):
-            id_para_excluir = escolha.split(" - ")[0]  # Pega só o ID
-            delete_funcionario(id_para_excluir)
-            st.warning("Funcionário removido.")
-            time.sleep(1)
-            st.rerun()
-    else:
-        st.write("Não há funcionários para excluir.")
+            if st.button("Confirmar Exclusão", type="primary"):
+                index = int(escolha.split(" - ")[0])
+                if delete_funcionario(index):
+                    st.success("Removido!")
+                    time.sleep(1)
+                    st.rerun()
+    except:
+        st.write("Sem dados.")
