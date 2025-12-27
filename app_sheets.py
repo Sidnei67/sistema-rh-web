@@ -98,7 +98,7 @@ elif menu_option == "Cadastrar":
         col1, col2 = st.columns(2)
         with col1:
             nome = st.text_input("Nome Completo")
-            email = st.text_input("E-mail Corporativo")
+            email = st.text_input("E-mail")
         with col2:
             cargo = st.text_input("Cargo")
             salario = st.number_input("Salário (R$)", min_value=0.0, step=100.0)
@@ -128,4 +128,5 @@ elif menu_option == "Excluir":
                     st.rerun()
     except:
         st.write("Sem dados.")
+
 
