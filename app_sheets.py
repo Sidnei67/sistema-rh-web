@@ -115,7 +115,7 @@ elif menu_option == "Cadastrar Novo":
             departamento = st.text_input("Departamento")
             
         with col2:
-            cargo = st.selectbox("Cargo")
+            cargo = st.text_iuput("Cargo")
             salario = st.number_input("Salário (R$)", min_value=0.0, step=100.0)
             data_admissao = st.date_input("Data de Admissão", value=date.today(), min_value=date(1900, 1, 1), format="DD/MM/YYYY")
         
@@ -150,4 +150,5 @@ elif menu_option == "Excluir":
             st.info("Nenhum funcionário na lista.")
     except:
         st.write("Erro ao carregar lista.")
+
 
