@@ -102,10 +102,10 @@ elif menu_option == "Cadastrar":
             nome = st.text_input("Nome Completo")
             email = st.text_input("E-mail Corporativo")
             # Adicionei o Departamento aqui na primeira coluna
-            departamento = st.selectbox("Departamento", ["Administrativo", "Financeiro", "RH", "TI", "Vendas", "Operacional"])
+            departamento = st.text.input("Departamento")
             
         with col2:
-            cargo = st.selectbox("Cargo", ["Analista", "Assistente", "Desenvolvedor", "Gerente", "Estagiário"])
+            cargo = st.text.input("Cargo")
             salario = st.number_input("Salário (R$)", min_value=0.0, step=100.0)
             data_admissao = st.date_input("Data de Admissão", value=date.today(), min_value=date(1900, 1, 1), format="DD/MM/YYYY")
         
@@ -135,6 +135,7 @@ elif menu_option == "Excluir":
                     st.rerun()
     except:
         st.write("Sem dados.")
+
 
 
 
