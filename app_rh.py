@@ -80,8 +80,8 @@ elif menu_option == "Cadastrar":
             email = st.text_input("E-mail Corporativo")  # NOVO CAMPO
 
         with col2:
-            cargo = st.selectbox(
-                "Cargo", ["Dev", "Analista", "Gerente", "RH", "Suporte"])
+            cargo = st.text_input(
+                "Cargo")
             salario = st.number_input(
                 "Salário (R$)", min_value=0.0, step=100.0)
             data_admissao = st.date_input("Data de Admissão")  # NOVO CAMPO
@@ -113,4 +113,5 @@ elif menu_option == "Excluir":
                     st.rerun()
     except:
         st.write("Sem dados.")
+
 
