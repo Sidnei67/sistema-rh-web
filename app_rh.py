@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 import time
-from datetime import datetime
+from datetime import datetime, date
 
 # --- CONFIGURAÇÃO ---
 # MANTENHA O SEU LINK AQUI (Não apague o que já estava funcionando!)
@@ -34,7 +34,13 @@ def add_funcionario(nome, cargo, salario, email, data_admissao):
             "salario": salario,
             "email": email,
             # Convertendo a data para texto para salvar na planilha
-            "data_admissao": data_admissao.strftime("%d/%m/%Y")
+            data_admissao = st.date_input(
+    "Data de Admissão",
+    value=date.today(),             # Começa com a data de hoje
+    min_value=date(1950, 1, 1),     # Permite datas desde 1950
+    max_value=date.today(),         # Não permite datas futuras
+    format="DD/MM/YYYY"             # Formato brasileiro visual
+)
         }])
 
         df_atualizado = pd.concat([df_atual, novo_dado], ignore_index=True)
@@ -113,5 +119,6 @@ elif menu_option == "Excluir":
                     st.rerun()
     except:
         st.write("Sem dados.")
+
 
 
