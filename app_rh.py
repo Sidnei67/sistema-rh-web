@@ -67,7 +67,7 @@ elif menu_option == "Cadastrar":
             email = st.text_input("E-mail Corporativo")
             
         with col2:
-            cargo = st.selectbox("Cargo", ["Dev", "Analista", "Gerente", "RH", "Suporte"])
+            cargo = st.selectbox("Cargo")
             salario = st.number_input("Salário (R$)", min_value=0.0, step=100.0)
             
             # --- MUDANÇA 2 AQUI (DATA COM LIMITE ANTIGO) ---
@@ -104,3 +104,4 @@ elif menu_option == "Excluir":
                     st.rerun()
     except:
         st.write("Sem dados.")
+
