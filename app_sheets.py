@@ -52,6 +52,7 @@ def add_funcionario(nome, cargo, salario, email, data_admissao):
         novo_dado = pd.DataFrame([{
             "nome": nome,
             "cargo": cargo,
+            "departamento": departamento,
             "salario": salario,
             "email": email,
             "data_admissao": data_admissao.strftime("%d/%m/%Y") 
@@ -96,18 +97,24 @@ elif menu_option == "Cadastrar":
     st.subheader("Novo Cadastro")
     with st.form("form_add"):
         col1, col2 = st.columns(2)
+        
         with col1:
             nome = st.text_input("Nome Completo")
-            email = st.text_input("E-mail")
+            email = st.text_input("E-mail Corporativo")
+            # Adicionei o Departamento aqui na primeira coluna
+            departamento = st.selectbox("Departamento", ["Administrativo", "Financeiro", "RH", "TI", "Vendas", "Operacional"])
+            
         with col2:
-            cargo = st.text_input("Cargo")
+            cargo = st.selectbox("Cargo", ["Analista", "Assistente", "Desenvolvedor", "Gerente", "Estagiário"])
             salario = st.number_input("Salário (R$)", min_value=0.0, step=100.0)
             data_admissao = st.date_input("Data de Admissão", value=date.today(), min_value=date(1900, 1, 1), format="DD/MM/YYYY")
         
+        # Botão de Salvar
         if st.form_submit_button("Salvar Funcionário"):
             if nome:
-                if add_funcionario(nome, cargo, salario, email, data_admissao):
-                    st.success("✅ Salvo!")
+                # ⚠️ ATENÇÃO: Passe a variável 'departamento' aqui dentro!
+                if add_funcionario(nome, cargo, departamento, salario, email, data_admissao):
+                    st.success("✅ Funcionário salvo!")
                     time.sleep(1)
                     st.rerun()
             else:
@@ -128,5 +135,6 @@ elif menu_option == "Excluir":
                     st.rerun()
     except:
         st.write("Sem dados.")
+
 
 
